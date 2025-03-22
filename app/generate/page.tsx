@@ -1,16 +1,20 @@
-// app/generate/page.tsx
-export const dynamic = "force-dynamic";
+"use client";
 
-import { Suspense } from "react";
-import { GenerateClient } from "@/components/GenerateClient";
+import { GenerateForm } from "@/components/GenerateForm";
+import { useSearchParams } from "next/navigation";
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const domain = searchParams.get("domain") ?? "helse"; // fallback til helse
+  const challenge = searchParams.get("challenge") ?? "";
+
   return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>Generer treningscase</h1>
-      <Suspense fallback={<p>Laster klient...</p>}>
-        <GenerateClient />
-      </Suspense>
+    <div className="p-4 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Generer en treningscase</h1>
+      <GenerateForm
+        mainCategory={domain as any}
+        challengeScenario={challenge}
+      />
     </div>
   );
 }

@@ -59,12 +59,10 @@ export function GenerateForm({
     },
   })
 
-  // Oppdater kategori basert på valgt hovedkategori
   useEffect(() => {
     form.setValue("category", mainCategory)
   }, [mainCategory, form])
 
-  // Legg til scenario som tilleggsinfo
   useEffect(() => {
     const text = [personScenario, challengeScenario, outcomeScenario].filter(Boolean).join(", ")
     if (text) {
@@ -72,7 +70,6 @@ export function GenerateForm({
     }
   }, [personScenario, challengeScenario, outcomeScenario, form])
 
-  // Sett tilfeldige nøkkelord
   const category = form.watch("category")
   useEffect(() => {
     const initial = getRandomKeywords(category as any, 3)
