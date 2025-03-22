@@ -1,17 +1,20 @@
 // app/api/generate/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(req: NextRequest) {
-  const { domain, challenge } = await req.json();
+  const { domain, complexity, keywords, additionalInfo } = await req.json()
 
-  if (!domain || !challenge) {
-    return NextResponse.json(
-      { error: "Mangler 'domain' eller 'challenge'" },
-      { status: 400 }
-    );
-  }
-
-  const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
+  const prompt = `
+Lag en realistisk treningscase innen fagområdet "${domain}" med kompleksitet "${complexity}".
+Nøkkelord: ${keywords.join(", ")}
+${additionalInfo ? `Tilleggsinfo: ${additionalInfo}` : ""}
+Format:
+1. Tittel
+2. Kort beskrivelse
+3. Detaljert case
+4. Refleksjonsspørsmål
+Svar kun med ren tekst, uten formatering.
+  `.trim()
 
   try {
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -22,39 +25,25 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: "mistral-7b-instruct",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
       }),
-    });
+    })
 
-    if (!response.ok) {
-      console.error("Feilstatus fra Perplexity:", response.status);
-      return NextResponse.json(
-        { error: "Feil fra Perplexity API" },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-
-    console.log("✅ Perplexity svar:", JSON.stringify(content, null, 2));
+    const data = await response.json()
+    const answer = data.choices?.[0]?.message?.content
 
     return NextResponse.json({
       domain,
-      challenge,
+      complexity,
+      keywords,
+      additionalInfo,
       prompt,
-      answer: content || "Ingen respons fra Perplexity",
-    });
+      answer,
+    })
   } catch (error: any) {
-    console.error("🛑 Generell feil:", error);
     return NextResponse.json(
-      { error: error.message || "Ukjent feil ved henting" },
+      { error: "Klarte ikke å generere fra Perplexity", details: error.message },
       { status: 500 }
-    );
+    )
   }
 }

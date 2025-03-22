@@ -1,14 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
@@ -18,15 +25,9 @@ import { getRandomKeywords } from "@/lib/predefined-keywords"
 import type { MainCategory } from "@/lib/types"
 
 const formSchema = z.object({
-  category: z.enum(["helse", "barnevern", "politi", "forsvaret", "nav"], {
-    required_error: "Vennligst velg en kategori.",
-  }),
-  complexity: z.enum(["enkel", "middels", "kompleks"], {
-    required_error: "Vennligst velg kompleksitetsnivå.",
-  }),
-  keywords: z.string().min(1, {
-    message: "Vennligst velg minst ett nøkkelord.",
-  }),
+  category: z.enum(["helse", "barnevern", "politi", "forsvaret", "nav"]),
+  complexity: z.enum(["enkel", "middels", "kompleks"]),
+  keywords: z.string().min(1),
   additionalInfo: z.string().optional(),
 })
 
@@ -44,9 +45,8 @@ export function GenerateForm({
   mainCategory,
 }: GenerateFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [apiStatus, setApiStatus] = useState<"idle" | "loading" | "success" | "error" | "fallback">("idle")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const router = useRouter()
+  const [answer, setAnswer] = useState<string | null>(null)
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,83 +59,61 @@ export function GenerateForm({
     },
   })
 
-  // Update form when mainCategory changes
+  // Oppdater kategori basert på valgt hovedkategori
   useEffect(() => {
     form.setValue("category", mainCategory)
   }, [mainCategory, form])
 
-  // Update the form with scenario information if available
+  // Legg til scenario som tilleggsinfo
   useEffect(() => {
-    if (personScenario || challengeScenario || outcomeScenario) {
-      const scenarioText = [personScenario, challengeScenario, outcomeScenario].filter(Boolean).join(", ")
-
-      if (scenarioText) {
-        form.setValue(
-          "additionalInfo",
-          `Inkluder følgende scenario i case-studien: ${scenarioText}. ${form.getValues("additionalInfo") || ""}`,
-        )
-      }
+    const text = [personScenario, challengeScenario, outcomeScenario].filter(Boolean).join(", ")
+    if (text) {
+      form.setValue("additionalInfo", `Inkluder følgende scenario i case-studien: ${text}.`)
     }
   }, [personScenario, challengeScenario, outcomeScenario, form])
 
-  // Initialize keywords when category changes
+  // Sett tilfeldige nøkkelord
   const category = form.watch("category")
   useEffect(() => {
-    // Get random keywords for the selected category
-    const initialKeywords = getRandomKeywords(category as any, 3)
-    form.setValue("keywords", initialKeywords.join(", "))
+    const initial = getRandomKeywords(category as any, 3)
+    form.setValue("keywords", initial.join(", "))
   }, [category, form])
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
-    setApiStatus("loading")
     setErrorMessage(null)
+    setAnswer(null)
 
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: values.category,
+          complexity: values.complexity,
+          keywords: values.keywords.split(",").map((k) => k.trim()),
+          additionalInfo: values.additionalInfo,
+        }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Noe gikk galt ved generering av case.")
+        const data = await response.json()
+        throw new Error(data.error || "Feil ved generering av case.")
       }
 
       const data = await response.json()
-
-      if (data.usedFallback) {
-        setApiStatus("fallback")
-        toast({
-          title: "Case generert med maler",
-          description: "Vi brukte forhåndsdefinerte maler på grunn av API-begrensninger.",
-          variant: "default",
-        })
-      } else {
-        setApiStatus("success")
-        toast({
-          title: "Case generert med AI!",
-          description: "Din case-studie er nå klar.",
-        })
-      }
-
-      router.push(`/case/${data.id}`)
-    } catch (error) {
-      console.error("Error generating case:", error)
-      setApiStatus("error")
-
-      // Extract error message
-      const errorMsg = error instanceof Error ? error.message : "Ukjent feil"
-      setErrorMessage(errorMsg)
+      if (!data.answer) throw new Error("Tomt svar fra Perplexity")
 
       toast({
-        title: "Feil",
-        description: "Kunne ikke generere case. Prøv igjen senere.",
-        variant: "destructive",
+        title: "Case generert med AI!",
+        description: "Din case-studie er klar.",
       })
+
+      setAnswer(data.answer)
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Ukjent feil"
+      setErrorMessage(msg)
+      toast({ title: "Feil", description: msg, variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -170,7 +148,7 @@ export function GenerateForm({
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Velg kompleksitetsnivå" />
+                        <SelectValue placeholder="Velg kompleksitet" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -208,27 +186,15 @@ export function GenerateForm({
                   <FormLabel>Tilleggsinformasjon (valgfritt)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Legg til spesifikke detaljer eller temaer du ønsker inkludert..."
+                      placeholder="Detaljer, scenarier eller mål for treningen..."
                       className="resize-none bg-white"
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Legg til spesifikke detaljer eller temaer du ønsker inkludert i case-studien.
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {apiStatus === "fallback" && (
-              <Alert className="bg-amber-50 border-amber-200">
-                <AlertDescription>
-                  Merk: Vi bruker forhåndsdefinerte maler på grunn av API-begrensninger. Case-studien vil fortsatt være
-                  av høy kvalitet, men mindre personlig tilpasset.
-                </AlertDescription>
-              </Alert>
-            )}
 
             <Button
               type="submit"
@@ -246,12 +212,18 @@ export function GenerateForm({
             </Button>
           </form>
         </Form>
+
+        {answer && (
+          <div className="mt-10 whitespace-pre-wrap bg-gray-50 border rounded-md p-4">
+            <h2 className="text-lg font-semibold mb-2">Generert treningscase:</h2>
+            <p>{answer}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-// Wrapper component to integrate KeywordSelector with React Hook Form
 function KeywordSelectorWrapper({
   category,
   value,
@@ -261,10 +233,7 @@ function KeywordSelectorWrapper({
   value: string
   onChange: (value: string) => void
 }) {
-  // Convert comma-separated string to array
   const selectedKeywords = value ? value.split(", ").filter(Boolean) : []
-
-  // Handle keyword changes
   const handleKeywordsChange = (newKeywords: string[]) => {
     onChange(newKeywords.join(", "))
   }
@@ -273,4 +242,3 @@ function KeywordSelectorWrapper({
     <KeywordSelector category={category} initialKeywords={selectedKeywords} onKeywordsChange={handleKeywordsChange} />
   )
 }
-
