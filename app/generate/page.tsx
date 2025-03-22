@@ -1,11 +1,11 @@
 "use client";
 
-import { GenerateForm } from "@/components/GenerateForm";
+import { GenerateForm } from "@/components/generate-form"; // NB: korrekt filnavn med små bokstaver og bindestrek
 import { useSearchParams } from "next/navigation";
 
 export default function Page() {
   const searchParams = useSearchParams();
-  const domain = searchParams.get("domain") ?? "helse"; // fallback til helse
+  const domain = searchParams.get("domain") ?? "helse"; // fallback hvis mangler
   const challenge = searchParams.get("challenge") ?? "";
 
   return (
