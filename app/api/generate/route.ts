@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const { domain, challenge } = await req.json();
 
+  if (!domain || !challenge) {
+    return NextResponse.json(
+      { error: "Mangler 'domain' eller 'challenge'" },
+      { status: 400 }
+    );
+  }
+
   const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
 
   try {
@@ -33,12 +40,16 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await response.json();
-
-    console.log("🧠 Perplexity respons:", JSON.stringify(data, null, 2));
-
     const content = data.choices?.[0]?.message?.content;
 
-    return NextResponse.json({ answer: content || "Ingen respons fra Perplexity" });
+    console.log("✅ Perplexity svar:", JSON.stringify(content, null, 2));
+
+    return NextResponse.json({
+      domain,
+      challenge,
+      prompt,
+      answer: content || "Ingen respons fra Perplexity",
+    });
   } catch (error: any) {
     console.error("🛑 Generell feil:", error);
     return NextResponse.json(
