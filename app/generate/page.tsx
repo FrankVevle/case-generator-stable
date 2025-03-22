@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 export default function GeneratePage() {
+  // 👇 Her starter klientlogikken
   const searchParams = useSearchParams();
   const domain = searchParams.get("domain");
   const challenge = searchParams.get("challenge");
@@ -20,7 +21,7 @@ export default function GeneratePage() {
       setError(null);
 
       try {
-        const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen: "${challenge}".`;
+        const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
 
         const response = await fetch("https://api.perplexity.ai/query", {
           method: "POST",
@@ -30,12 +31,12 @@ export default function GeneratePage() {
           },
           body: JSON.stringify({
             query: prompt,
-            model: "pplx-7b-chat"
+            model: "pplx-7b-chat",
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`Perplexity API feilet (${response.status})`);
+          throw new Error(`Feil fra API: ${response.status}`);
         }
 
         const data = await response.json();
@@ -56,7 +57,7 @@ export default function GeneratePage() {
       {domain && <p><strong>Domenefelt:</strong> {domain}</p>}
       {challenge && <p><strong>Utfordring:</strong> {challenge}</p>}
 
-      {loading && <p>Laster treningscase...</p>}
+      {loading && <p>Laster case...</p>}
       {error && <p style={{ color: "red" }}>Feil: {error}</p>}
       {caseText && (
         <div style={{ marginTop: "2rem", whiteSpace: "pre-wrap" }}>
