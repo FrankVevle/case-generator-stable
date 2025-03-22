@@ -2,53 +2,48 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const { domain, challenge } = await req.json();
+
+  const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
+
   try {
-    const { domain, challenge } = await req.json();
-
-    if (!domain || !challenge) {
-      return NextResponse.json(
-        { error: "Manglende domain eller challenge" },
-        { status: 400 }
-      );
-    }
-
-    const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
-
-    const response = await fetch("https://api.perplexity.ai/query", {
+    const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        query: prompt,
-        model: "pplx-7b-chat",
+        model: "mistral-7b-instruct",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
       }),
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
+      console.error("Feilstatus fra Perplexity:", response.status);
       return NextResponse.json(
-        { error: `Feil fra Perplexity: ${response.status} - ${errorBody}` },
-        { status: 500 }
+        { error: "Feil fra Perplexity API" },
+        { status: response.status }
       );
     }
 
     const data = await response.json();
-    return NextResponse.json({ answer: data.answer || JSON.stringify(data) });
+
+    console.log("🧠 Perplexity respons:", JSON.stringify(data, null, 2));
+
+    const content = data.choices?.[0]?.message?.content;
+
+    return NextResponse.json({ answer: content || "Ingen respons fra Perplexity" });
   } catch (error: any) {
+    console.error("🛑 Generell feil:", error);
     return NextResponse.json(
-      { error: error.message || "Ukjent feil" },
+      { error: error.message || "Ukjent feil ved henting" },
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return NextResponse.json(
-    {
-      error: "GET er ikke støttet for denne endepunktet. Bruk POST.",
-    },
-    { status: 405 }
-  );
 }
