@@ -20,22 +20,20 @@ export function GenerateClient() {
       setError(null);
 
       try {
-        const prompt = `Lag en realistisk treningscase innenfor domenet "${domain}" med utfordringen "${challenge}".`;
-
-        const response = await fetch("https://api.perplexity.ai/query", {
+        const response = await fetch("/api/generate", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_PERPLEXITY_API_KEY}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            query: prompt,
-            model: "pplx-7b-chat",
-          }),
+          body: JSON.stringify({ domain, challenge }),
         });
 
+        if (!response.ok) {
+          throw new Error("Feil ved generering av case");
+        }
+
         const data = await response.json();
-        setCaseText(data.answer || JSON.stringify(data, null, 2));
+        setCaseText(data.answer);
       } catch (err: any) {
         setError(err.message || "Ukjent feil");
       } finally {
