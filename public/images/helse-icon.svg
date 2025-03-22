@@ -1,0 +1,8 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Endre bakgrunnen til en annen farge -->
+<circle cx="50" cy="50" r="45" fill="#F0F8FF" stroke="#4EACC2" stroke-width="3"/>
+<!-- Endre krysset til en annen form eller farge -->
+<rect x="35" y="25" width="30" height="50" rx="2" fill="#FF6B6B"/>
+<rect x="25" y="40" width="50" height="20" rx="2" fill="#FF6B6B"/>
+</svg>
+

@@ -1,0 +1,11 @@
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+<!-- Ny bakgrunn -->
+<rect x="10" y="10" width="80" height="80" rx="10" fill="#2C3E50"/>
+<!-- Ny politibadge -->
+<circle cx="50" cy="40" r="20" fill="#ECF0F1"/>
+<path d="M50 25L55 35H65L57 42L60 55L50 48L40 55L43 42L35 35H45L50 25Z" fill="#3498DB"/>
+<!-- Tekst under -->
+<rect x="30" y="65" width="40" height="15" rx="2" fill="#ECF0F1"/>
+<path d="M37 75H42M45 75H50M53 75H58M61 75H63" stroke="#2C3E50" stroke-width="2" stroke-linecap="round"/>
+</svg>
+
