@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { GenerateForm } from "@/components/generate-form";
 
-export default function GeneratePageClient() {
+export default function ClientPage() {
   const searchParams = useSearchParams();
   const domain = searchParams.get("domain") ?? "helse";
   const challenge = searchParams.get("challenge") ?? "";
