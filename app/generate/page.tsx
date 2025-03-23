@@ -1,11 +1,7 @@
-// app/generate/page.tsx
-import dynamic from "next/dynamic";
+// 🧩 Fil: app/generate/page.tsx
+"use client";
 
-// Importer klientkomponenten dynamisk
-const GeneratePageClient = dynamic(() => import("@/components/GeneratePageClient"), {
-  ssr: false,
-});
+import { GeneratePageClient } from "@/components/GeneratePageClient";
 
 export default function Page() {
   return <GeneratePageClient />;
-}
